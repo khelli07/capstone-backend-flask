@@ -34,15 +34,15 @@
 2. Build the image
 
     ```
-    docker build -t capstone-backend-flask:[tag] .
+    docker build -t capstone-backend-flask:$TAG .
     ```
 
-    - **[tag]** should be of form **[MAJOR]:[MINOR]**
+    - **$TAG** should be of form **[MAJOR]:[MINOR]**
     - **.** describes the location of the Dockerfile
 
 3. Running the image container
     ```
-    docker run -p 5000:5000 capstone-backend-flask:[tag]
+    docker run -e PORT=5000 -p 5000:5000 capstone-backend-flask:$TAG
     ```
 
 ## Pushing to Artifact Registry
@@ -58,11 +58,11 @@
 1. Tag the image
 
     ```
-    docker tag capstone-backend-flask:[tag] asia-southeast2-docker.pkg.dev/capstone-match-event/flask-docker/capstone-backend-flask:[tag]
+    docker tag capstone-backend-flask:$TAG asia-southeast2-docker.pkg.dev/capstone-match-event/flask-docker/capstone-backend-flask:$TAG
     ```
 
 2. Push to Artifact Registry
 
     ```
-    docker push asia-southeast2-docker.pkg.dev/capstone-match-event/flask-docker/capstone-backend-flask:[tag]
+    docker push asia-southeast2-docker.pkg.dev/capstone-match-event/flask-docker/capstone-backend-flask:$TAG
     ```
