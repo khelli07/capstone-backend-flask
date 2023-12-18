@@ -80,7 +80,7 @@ def other():
 
     u = user_id_to_check
     user_data = df_user.loc[u]
-    
+
     # Combine user interests and past events
     items_of_user_1 = user_data["user_interest_category"]
 
@@ -97,4 +97,4 @@ def other():
     relevant_items_above_threshold = df_event_top50[
         df_event_top50["cosine"] > threshold
     ].index.values
-    return jsonify({"Recommend Event": relevant_items_above_threshold.tolist()})
+    return jsonify({"data": relevant_items_above_threshold.tolist()})
