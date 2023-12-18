@@ -4,19 +4,26 @@ from surprise import Reader, Dataset
 from surprise.model_selection import KFold, GridSearchCV
 from surprise import SVD
 
+from db.database import db
+
 popularBP = Blueprint("popular", __name__)
 
 
 @popularBP.route("/", methods=["GET"])
 def infer():
-    event_table = pd.read_csv("event_table.csv")
-    sentiment_analysis = pd.read_csv("sentiment_analysis.csv")
-    category_table = pd.read_csv("category_table.csv")
+
+    event_table = pd.DataFrame(list(db.events.find({})))
+    event_table["event_id"] = event_table["_id"].astype(str)
+    event_table = event_table.drop(["_id"], axis=1)
+
+    sentiment_analysis = pd.DataFrame(list(db.reviews.find({})))
+
+    category_table = pd.DataFrame(list(db.categories.find({})))
 
     # Merge data for collaborative filtering
     merged_data = pd.merge(
         sentiment_analysis[["event_id", "user_id", "rating"]],
-        event_table[["event_id", "event_name", "category_id"]],
+        event_table[["event_id", "name", "category_id"]],
         on="event_id",
     )
     merged_data = pd.merge(merged_data, category_table, on="category_id")
@@ -24,7 +31,7 @@ def infer():
     # Create Surprise dataset
     reader = Reader(rating_scale=(1, 5))
     data = Dataset.load_from_df(
-        merged_data[["user_id", "event_name", "rating"]], reader
+        merged_data[["user_id", "name", "rating"]], reader
     )
 
     # Define a cross-validation iterator
@@ -44,7 +51,7 @@ def infer():
 
     def generate_popularity_recommendations(n=10):
         event_popularity = (
-            merged_data.groupby(["event_id", "event_name", "category_name"])["rating"]
+            merged_data.groupby(["event_id", "name", "category_name"])["rating"]
             .agg(["mean", "count"])
             .sort_values(by="mean", ascending=False)
         )

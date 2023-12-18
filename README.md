@@ -10,10 +10,11 @@
     pip install -r requirements.txt
     ```
 
-    Download gensim models beforehand
+    Download models beforehand
 
     ```
-    python3 -c "import gensim.downloader; model=gensim.downloader.load('glove-wiki-gigaword-100'); model.save('glove-wiki-gigaword-100.model')"
+    python -c "import nltk; nltk.download('stopwords'); nltk.download('punkt')"
+    python -c "import gensim.downloader; model=gensim.downloader.load('glove-wiki-gigaword-100'); model.save('glove-wiki-gigaword-100.model')"
     ```
 
 2.  Run the app
@@ -48,7 +49,7 @@
 
 3. Running the image container
     ```
-    docker run -e PORT=5000 -p 5000:5000 capstone-backend-flask:$TAG
+    docker run -p 5000:5000 --env-file .env capstone-backend-flask:$TAG
     ```
 
 Notes: Don't use slim version, as scikit needs gcc where as it is removed in slim version

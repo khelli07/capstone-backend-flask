@@ -10,8 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Download NLTK data https://stackoverflow.com/questions/31143015/docker-nltk-download
-RUN [ "python3", "-c", "import nltk; nltk.download('stopwords')" ]
-RUN [ "python3", "-c", "import nltk; nltk.download('punkt')" ]
+RUN [ "python3", "-c", "import nltk; nltk.download('stopwords'); nltk.download('punkt')" ]
 RUN cp -r /root/nltk_data /usr/local/share/nltk_data 
 
 # Download gensim data

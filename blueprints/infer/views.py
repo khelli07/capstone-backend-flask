@@ -10,6 +10,7 @@ import re
 import gensim.downloader
 import os
 
+from db.database import db
 
 inferBP = Blueprint("other", __name__)
 
@@ -22,28 +23,25 @@ def other():
     user_id_to_check = data["user_id"]
     threshold = data.get("threshold", 0.5)
 
-    df_user = pd.read_csv("user_table.csv", index_col=0)
-    df_user = df_user.drop("user_name", axis=1)
+    df_user = pd.DataFrame(list(db.users.find({})))
+    df_user["user_id"] = df_user["_id"].astype(str)
+    df_user = df_user.set_index("user_id")
+    df_user = df_user.drop(["_id", "username"], axis=1)
 
-    if int(user_id_to_check) not in df_user.index:
+    if user_id_to_check not in df_user.index:
+        print("User not found")
         return jsonify({"Recommend Event": []})
 
-    df_user[["user_interest", "user_past_event"]] = df_user[
-        ["user_interest", "user_past_event"]
-    ].apply(lambda x: x.str.split(", "))
-
-    df_user_expanded = df_user.explode("user_interest").explode("user_past_event")
+    df_user_expanded = df_user.explode("user_interest_category").explode("user_past_event_category")
     df_user_expanded["row_number"] = range(1, len(df_user_expanded) + 1)
 
-    df_event = pd.read_csv("event_table.csv", index_col=0)
-    df_event = df_event.drop(["index_to_drop", "date", "event_price"], axis=1)
+    df_event = pd.DataFrame(list(db.events.find({})))
+    df_event["event_id"] = df_event["_id"].astype(str)
+    df_event = df_event.drop(["_id"], axis=1)
+    df_event = df_event.set_index("event_id")
+    df_event = df_event[["category_id", "name", "event_description"]]
 
-    train, test = train_test_split(df_user, test_size=0.2, random_state=42)
-
-    train["user_id"] = train.index.astype(int)
-    test["user_id"] = test.index.astype(int)
-
-    df_event["combined"] = df_event["event_name"] + " " + df_event["event_description"]
+    df_event["combined"] = df_event["name"] + " " + df_event["event_description"]
 
     df_event["combined"] = df_event["combined"].str.lower()
 
@@ -81,9 +79,10 @@ def other():
     )
 
     u = user_id_to_check
-    user_data = train[train["user_id"] == u]
+    user_data = df_user.loc[u]
+    
     # Combine user interests and past events
-    items_of_user_1 = user_data["user_interest"].explode().astype(int).values
+    items_of_user_1 = user_data["user_interest_category"]
 
     embedding_of_events_of_user = df_event.loc[
         df_event.category_id.isin(items_of_user_1), "embedding"
