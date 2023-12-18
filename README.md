@@ -10,6 +10,12 @@
     pip install -r requirements.txt
     ```
 
+    Download gensim models beforehand
+
+    ```
+    python3 -c "import gensim.downloader; model=gensim.downloader.load('glove-wiki-gigaword-100'); model.save('glove-wiki-gigaword-100.model')"
+    ```
+
 2.  Run the app
 
     ```
@@ -44,6 +50,8 @@
     ```
     docker run -e PORT=5000 -p 5000:5000 capstone-backend-flask:$TAG
     ```
+
+Notes: Don't use slim version, as scikit needs gcc where as it is removed in slim version
 
 ## Pushing to Artifact Registry
 
