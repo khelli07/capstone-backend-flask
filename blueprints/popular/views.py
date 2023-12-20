@@ -1,16 +1,23 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify
 import pandas as pd
 from surprise import Reader, Dataset
 from surprise.model_selection import KFold, GridSearchCV
 from surprise import SVD
 from datetime import datetime
 from db.database import db
+import json
+
+from cache_lib.cache import cache
 
 popularBP = Blueprint("popular", __name__)
 
 
 @popularBP.route("/", methods=["GET"])
 def popular():
+    if cache.exists("popular"):
+        print("Cache exists")
+        return jsonify({"data": json.loads(cache.get("popular"))})
+
     event_table = pd.DataFrame(
         list(db.events.find({"start_time": {"$gte": datetime.now()}}))
     )
@@ -62,11 +69,13 @@ def popular():
 
     popularity_recommendations = generate_popularity_recommendations()
 
+    res = {
+        "data": [
+            data[0] for data in popularity_recommendations.index.tolist()
+        ],  # data[0] is the event_id
+    }
+
+    cache.set("popular", json.dumps(res["data"]), ex=60 * 60 * 24)  # 1 day
+
     """Infer a prediction from a trained model."""
-    return jsonify(
-        {
-            "data": [
-                data[0] for data in popularity_recommendations.index.tolist()
-            ],  # data[0] is the event_id
-        }
-    )
+    return jsonify(res)
