@@ -3,16 +3,17 @@ import pandas as pd
 from surprise import Reader, Dataset
 from surprise.model_selection import KFold, GridSearchCV
 from surprise import SVD
-
+from datetime import datetime
 from db.database import db
 
 popularBP = Blueprint("popular", __name__)
 
 
 @popularBP.route("/", methods=["GET"])
-def infer():
-
-    event_table = pd.DataFrame(list(db.events.find({})))
+def popular():
+    event_table = pd.DataFrame(
+        list(db.events.find({"start_time": {"$gte": datetime.now()}}))
+    )
     event_table["event_id"] = event_table["_id"].astype(str)
     event_table = event_table.drop(["_id"], axis=1)
 
@@ -23,16 +24,17 @@ def infer():
     # Merge data for collaborative filtering
     merged_data = pd.merge(
         sentiment_analysis[["event_id", "user_id", "rating"]],
-        event_table[["event_id", "name", "category_id"]],
+        event_table[["event_id", "name", "category"]],
         on="event_id",
     )
-    merged_data = pd.merge(merged_data, category_table, on="category_id")
+    category_table["category"] = category_table["_id"].astype(str)
+    category_table["category_name"] = category_table["name"]
+    category_table = category_table.drop(["_id", "name"], axis=1)
+    merged_data = pd.merge(merged_data, category_table, on="category")
 
     # Create Surprise dataset
     reader = Reader(rating_scale=(1, 5))
-    data = Dataset.load_from_df(
-        merged_data[["user_id", "name", "rating"]], reader
-    )
+    data = Dataset.load_from_df(merged_data[["user_id", "name", "rating"]], reader)
 
     # Define a cross-validation iterator
     kf = KFold(n_splits=5)
@@ -63,6 +65,8 @@ def infer():
     """Infer a prediction from a trained model."""
     return jsonify(
         {
-            "data": [data[0] for data in popularity_recommendations.index.tolist()], # data[0] is the event_id
+            "data": [
+                data[0] for data in popularity_recommendations.index.tolist()
+            ],  # data[0] is the event_id
         }
     )
