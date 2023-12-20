@@ -15,7 +15,6 @@ popularBP = Blueprint("popular", __name__)
 @popularBP.route("/", methods=["GET"])
 def popular():
     if cache.exists("popular"):
-        print("Cache exists")
         return jsonify({"data": json.loads(cache.get("popular"))})
 
     event_table = pd.DataFrame(

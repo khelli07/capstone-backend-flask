@@ -9,8 +9,10 @@ import numpy as np
 import re
 import gensim.downloader
 import os
+import json
 
 from db.database import db
+from cache_lib.cache import cache
 
 inferBP = Blueprint("other", __name__)
 
@@ -22,6 +24,11 @@ def infer():
     data = request.get_json(force=True)
     user_id_to_check = data["user_id"]
     threshold = data.get("threshold", 0.5)
+
+    if cache.exists(f"recommendation:{user_id_to_check}"):
+        return jsonify(
+            {"data": json.loads(cache.get(f"recommendation:{user_id_to_check}"))}
+        )
 
     df_user = pd.DataFrame(list(db.users.find({})))
     df_user["user_id"] = df_user["_id"].astype(str)
@@ -99,4 +106,10 @@ def infer():
     relevant_items_above_threshold = df_event_top50[
         df_event_top50["cosine"] > threshold
     ].index.values
+
+    cache.set(
+        f"recommendation:{user_id_to_check}",
+        json.dumps(relevant_items_above_threshold.tolist()),
+        ex=10 * 60,  # 10 minutes
+    )
     return jsonify({"data": relevant_items_above_threshold.tolist()})
